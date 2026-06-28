@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de síntomas — Ciclo tibolona 28 días</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F5F2;
+    --surface: #FFFFFF;
+    --surface-2: #F0EDE8;
+    --border: #E2DDD7;
+    --border-strong: #C8C1B8;
+    --text-primary: #1A1714;
+    --text-secondary: #5C5650;
+    --text-muted: #9C968F;
+    --accent: #7C6F9F;
+    --accent-light: #EDE9F7;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161412;
+      --surface: #1F1C1A;
+      --surface-2: #2A2623;
+      --border: #3A3530;
+      --border-strong: #504A44;
+      --text-primary: #F0EDE8;
+      --text-secondary: #A8A099;
+      --text-muted: #6A6460;
+      --accent: #9D91C4;
+      --accent-light: #2A2540;
+      --shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  header { margin-bottom: 1.5rem; }
+  header h1 { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  header p { font-size: 13px; color: var(--text-muted); }
+
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;
+  }
+
+  .month-nav { display: flex; align-items: center; gap: 6px; }
+  .month-nav button {
+    background: var(--surface); border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius); padding: 5px 12px; font-size: 13px;
+    cursor: pointer; color: var(--text-secondary); transition: background 0.1s;
+  }
+  .month-nav button:hover { background: var(--surface-2); }
+  .month-label { font-size: 14px; font-weight: 500; color: var(--text-primary); min-width: 140px; text-align: center; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px; font-size: 11px;
+    color: var(--text-secondary); cursor: pointer; padding: 4px 8px;
+    border-radius: 20px; border: 1.5px solid transparent;
+    transition: border-color 0.15s, background 0.15s; user-select: none;
+  }
+  .legend-item:hover { background: var(--surface-2); }
+  .legend-item.active { border-color: var(--accent); background: var(--accent-light); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .grid-wrapper { overflow-x: auto; margin-bottom: 1rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: 120px repeat(28, minmax(20px, 1fr));
+    gap: 2px; min-width: 600px;
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 10px;
+  }
+  .grid-header {
+    font-size: 9px; color: var(--text-muted); text-align: center;
+    padding: 2px 0; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .grid-header.week-start { color: var(--accent); }
+  .row-label {
+    font-size: 10px; color: var(--text-secondary);
+    display: flex; align-items: center; padding-right: 6px; line-height: 1.3;
+  }
+  .cell {
+    position: relative; border-radius: 3px; border: 0.5px solid var(--border);
+    background: var(--surface-2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1; min-height: 18px;
+    transition: transform 0.1s, border-color 0.1s; user-select: none;
+  }
+  .cell:hover { border-color: var(--border-strong); transform: scale(1.18); z-index: 2; }
+  .cell.selected-day { border-color: var(--accent) !important; border-width: 1.5px; }
+  .cell-count { font-size: 8px; font-weight: 600; line-height: 1; pointer-events: none; }
+
+  .day-panel {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .day-panel-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+  .symptom-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .sym-row {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface-2); border-radius: 20px;
+    padding: 4px 10px; border: 1.5px solid var(--border);
+    transition: border-color 0.15s;
+  }
+  .sym-row.has-data { border-color: var(--border-strong); }
+  .sym-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sym-name { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+  .pm-wrap { display: flex; align-items: center; gap: 3px; }
+  .pm-btn {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 0.5px solid var(--border-strong); background: var(--surface);
+    cursor: pointer; font-size: 13px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); transition: background 0.1s;
+  }
+  .pm-btn:hover { background: var(--surface-2); }
+  .pm-count { font-size: 11px; font-weight: 600; min-width: 14px; text-align: center; color: var(--text-primary); }
+  .clear-btn {
+    font-size: 11px; color: var(--text-muted); background: none; border: none;
+    cursor: pointer; text-decoration: underline; float: right;
+  }
+  .clear-btn:hover { color: var(--text-secondary); }
+
+  .bottom-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  @media (max-width: 520px) { .bottom-section { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 1rem; box-shadow: var(--shadow);
+  }
+  .panel-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 10px; }
+
+  .intensity-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .int-label { font-size: 11px; color: var(--text-secondary); width: 70px; }
+  .int-dot {
+    width: 12px; height: 12px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.1s, border-color 0.1s; flex-shrink: 0;
+  }
+  .int-dot:hover { transform: scale(1.3); }
+  .int-dot.sel { border-color: var(--text-primary); transform: scale(1.2); }
+  .int-desc { font-size: 10px; color: var(--text-muted); }
+
+  .stats-list { list-style: none; }
+  .stats-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+  }
+  .stats-list li:last-child { border-bottom: none; }
+  .stat-name { color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+  .stat-val { font-weight: 600; color: var(--text-primary); font-size: 11px; }
+  .empty-stats { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+  .notes-area {
+    width: 100%; border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 8px 10px; font-size: 12px; background: var(--surface-2);
+    color: var(--text-primary); resize: vertical; font-family: inherit; margin-top: 4px;
+    min-height: 70px;
+  }
+  .notes-area:focus { outline: none; border-color: var(--accent); }
+
+  .save-indicator {
+    font-size: 11px; color: var(--text-muted); text-align: right;
+    margin-top: 6px; transition: opacity 0.5s;
+  }
+
+  .week-labels {
+    display: grid; grid-template-columns: 120px repeat(4, 1fr);
+    gap: 2px; min-width: 600px; margin-bottom: 2px; padding: 0 10px;
+  }
+  .week-label-cell { font-size: 9px; color: var(--accent); font-weight: 600; text-align: center; padding: 2px 0; }
+  .week-label-empty { }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Registro de síntomas — Tibolona</h1>
+    <p>Ciclo de 28 días · Los datos se guardan automáticamente en este navegador</p>
+  </header>
+
+  <div class="top-bar">
+    <div style="font-size:13px;color:var(--text-secondary)">Síntoma activo: <strong id="activeSymLabel" style="color:var(--accent)"></strong></div>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹ Anterior</button>
+      <span class="month-label" id="monthLabel"></span>
+      <button onclick="changeMonth(1)">Siguiente ›</button>
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="grid-wrapper">
+    <div class="grid" id="mainGrid"></div>
+  </div>
+
+  <div class="day-panel" id="dayPanel" style="display:none">
+    <div class="day-panel-title" id="dayPanelTitle"></div>
+    <div class="symptom-grid" id="daySymptoms"></div>
+    <button class="clear-btn" onclick="clearDay()">Borrar todo el día</button>
+    <div style="clear:both"></div>
+  </div>
+
+  <div class="bottom-section">
+    <div class="panel">
+      <div class="panel-title">Intensidad del síntoma activo</div>
+      <div id="intensityPanel"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Resumen del ciclo</div>
+      <ul class="stats-list" id="statsList"></ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Notas del ciclo</div>
+    <textarea class="notes-area" id="cycleNotes" rows="3" placeholder="Observaciones, cambios en medicación, visitas médicas, efectos secundarios…"></textarea>
+    <div class="save-indicator" id="saveIndicator">Los datos se guardan automáticamente</div>
+  </div>
+</div>
+
+<script>
+const SYMPTOMS = [
+  { id: 'sangrado', label: 'Sangrado / manchado', colors: ['#FDDADA','#F59096','#E04048','#8B1C22'] },
+  { id: 'sofocos', label: 'Sofocos', colors: ['#FDE8CC','#F9C07A','#F08D2A','#A05A0A'] },
+  { id: 'sudoracion', label: 'Sudoración nocturna', colors: ['#D4EAF9','#89C4EE','#3A91D4','#1A5A8A'] },
+  { id: 'cefalea', label: 'Cefalea', colors: ['#EDD5F7','#C49AE8','#9150CC','#571E88'] },
+  { id: 'animo', label: 'Cambios de ánimo', colors: ['#FFE7F2','#F9A8C9','#E9508A','#8C1A47'] },
+  { id: 'insomnio', label: 'Insomnio', colors: ['#D5E4FF','#8CB8F5','#3775E8','#153A96'] },
+  { id: 'libido', label: 'Cambios de libido', colors: ['#FFECD5','#FFBE7A','#F08630','#8A4310'] },
+  { id: 'sequia', label: 'Sequedad vaginal', colors: ['#D5F5EE','#7DD4C2','#2BA891','#0D6B5D'] },
+  { id: 'articular', label: 'Dolor articular', colors: ['#F0F0D5','#D4C47A','#A89220','#66580A'] },
+  { id: 'fatiga', label: 'Fatiga', colors: ['#EBEBEB','#BABABA','#707070','#303030'] },
+];
+
+const INTENSITY = [
+  { label: 'Leve', desc: '1–2 veces/día', idx: 0 },
+  { label: 'Moderado', desc: '3–4 veces/día', idx: 1 },
+  { label: 'Intenso', desc: '5–6 veces/día', idx: 2 },
+  { label: 'Severo', desc: '7+ veces/día', idx: 3 },
+];
+
+const STORAGE_KEY = 'tibolona_registro_v1';
+
+let state = {
+  currentMonthOffset: 0,
+  selectedSymptomIdx: 0,
+  selectedIntensity: 1,
+  selectedDay: null,
+  data: {}
+};
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.data) state.data = parsed.data;
+    }
+  } catch(e) {}
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ data: state.data }));
+    const el = document.getElementById('saveIndicator');
+    el.textContent = 'Guardado · ' + new Date().toLocaleTimeString('es-ES', {hour:'2-digit',minute:'2-digit'});
+    el.style.opacity = '1';
+    setTimeout(() => { el.style.opacity = '0.5'; }, 2000);
+  } catch(e) {}
+}
+
+function monthKey(offset) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + offset);
+  return d.toISOString().slice(0, 7);
+}
+
+function monthLabelStr(offset) {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + offset);
+  return d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+}
+
+function getMonthData() {
+  const k = monthKey(state.currentMonthOffset);
+  if (!state.data[k]) state.data[k] = { days: {}, notes: '' };
+  return state.data[k];
+}
+
+function getDayData(day) {
+  const md = getMonthData();
+  if (!md.days[day]) md.days[day] = {};
+  return md.days[day];
+}
+
+function changeMonth(dir) {
+  saveNotes();
+  state.currentMonthOffset += dir;
+  state.selectedDay = null;
+  render();
+}
+
+function saveNotes() {
+  const ta = document.getElementById('cycleNotes');
+  if (ta) { getMonthData().notes = ta.value; save(); }
+}
+
+function render() {
+  document.getElementById('monthLabel').textContent = monthLabelStr(state.currentMonthOffset);
+  document.getElementById('activeSymLabel').textContent = SYMPTOMS[state.selectedSymptomIdx].label;
+  renderLegend();
+  renderGrid();
+  renderIntensityPanel();
+  renderStats();
+  renderDayPanel();
+  const ta = document.getElementById('cycleNotes');
+  if (ta) ta.value = getMonthData().notes || '';
+}
+
+function renderLegend() {
+  document.getElementById('legend').innerHTML = SYMPTOMS.map((s, i) => `
+    <div class="legend-item ${i === state.selectedSymptomIdx ? 'active' : ''}" onclick="selectSymptom(${i})">
+      <div class="legend-dot" style="background:${s.colors[2]}"></div>
+      <span>${s.label}</span>
+    </div>
+  `).join('');
+}
+
+function renderGrid() {
+  let html = '<div class="grid-header" style="text-align:left"></div>';
+  for (let d = 1; d <= 28; d++) {
+    const ws = d === 1 || d === 8 || d === 15 || d === 22;
+    html += `<div class="grid-header ${ws ? 'week-start' : ''}">${d}</div>`;
+  }
+
+  SYMPTOMS.forEach((s, si) => {
+    html += `<div class="row-label">${s.label}</div>`;
+    for (let d = 1; d <= 28; d++) {
+      const dd = getDayData(d);
+      const entry = dd[s.id];
+      let bg = 'var(--surface-2)';
+      let countHtml = '';
+      if (entry && entry.count > 0) {
+        bg = s.colors[entry.intensity];
+        const textColor = entry.intensity >= 2 ? '#fff' : s.colors[3];
+        countHtml = `<span class="cell-count" style="color:${textColor}">${entry.count}</span>`;
+      }
+      const selClass = state.selectedDay === d ? 'selected-day' : '';
+      html += `<div class="cell ${selClass}" style="background:${bg}" onclick="clickCell(${d},${si})">${countHtml}</div>`;
+    }
+  });
+
+  document.getElementById('mainGrid').innerHTML = html;
+}
+
+function renderIntensityPanel() {
+  const s = SYMPTOMS[state.selectedSymptomIdx];
+  document.getElementById('intensityPanel').innerHTML = INTENSITY.map(({ label, desc, idx }) => `
+    <div class="intensity-row">
+      <span class="int-label">${label}</span>
+      <div class="int-dot ${idx === state.selectedIntensity ? 'sel' : ''}" style="background:${s.colors[idx]}" onclick="selectIntensity(${idx})"></div>
+      <span class="int-desc">${desc}</span>
+    </div>
+  `).join('');
+}
+
+function renderStats() {
+  const md = getMonthData();
+  const counts = {};
+  SYMPTOMS.forEach(s => counts[s.id] = { days: 0, total: 0 });
+  for (let d = 1; d <= 28; d++) {
+    const dd = md.days[d] || {};
+    SYMPTOMS.forEach(s => {
+      if (dd[s.id] && dd[s.id].count > 0) {
+        counts[s.id].days++;
+        counts[s.id].total += dd[s.id].count;
+      }
+    });
+  }
+  const top = SYMPTOMS.filter(s => counts[s.id].days > 0)
+    .sort((a, b) => counts[b.id].total - counts[a.id].total)
+    .slice(0, 6);
+
+  if (!top.length) {
+    document.getElementById('statsList').innerHTML = '<li><span class="empty-stats">Sin registros en este ciclo</span></li>';
+    return;
+  }
+  document.getElementById('statsList').innerHTML = top.map(s => `
+    <li>
+      <span class="stat-name">
+        <div class="legend-dot" style="background:${s.colors[2]};width:8px;height:8px;display:inline-block;border-radius:50%;flex-shrink:0"></div>
+        ${s.label}
+      </span>
+      <span class="stat-val">${counts[s.id].days}d · ${counts[s.id].total} ep.</span>
+    </li>
+  `).join('');
+}
+
+function renderDayPanel() {
+  const el = document.getElementById('dayPanel');
+  if (!state.selectedDay) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  document.getElementById('dayPanelTitle').textContent = `Día ${state.selectedDay} — ajustar síntomas`;
+  const dd = getDayData(state.selectedDay);
+
+  document.getElementById('daySymptoms').innerHTML = SYMPTOMS.map((s, si) => {
+    const entry = dd[s.id];
+    const count = entry ? entry.count : 0;
+    const intensity = entry ? entry.intensity : state.selectedIntensity;
+    const dotColor = count > 0 ? s.colors[intensity] : 'var(--border-strong)';
+    return `
+      <div class="sym-row ${count > 0 ? 'has-data' : ''}" style="${count > 0 ? 'border-color:' + s.colors[1] : ''}">
+        <div class="sym-dot" style="background:${dotColor}"></div>
+        <span class="sym-name">${s.label}</span>
+        <div class="pm-wrap">
+          <button class="pm-btn" onclick="adjustCount(${state.selectedDay},'${s.id}',-1)">−</button>
+          <span class="pm-count">${count}</span>
+          <button class="pm-btn" onclick="adjustCount(${state.selectedDay},'${s.id}',1)">+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function clickCell(day, symIdx) {
+  state.selectedDay = day;
+  state.selectedSymptomIdx = symIdx;
+  const dd = getDayData(day);
+  const s = SYMPTOMS[symIdx];
+  if (!dd[s.id] || dd[s.id].count === 0) {
+    dd[s.id] = { count: 1, intensity: state.selectedIntensity };
+  } else {
+    dd[s.id].count = Math.min(dd[s.id].count + 1, 20);
+  }
+  save();
+  render();
+}
+
+function adjustCount(day, sid, delta) {
+  const dd = getDayData(day);
+  if (!dd[sid]) dd[sid] = { count: 0, intensity: state.selectedIntensity };
+  dd[sid].count = Math.max(0, dd[sid].count + delta);
+  dd[sid].intensity = state.selectedIntensity;
+  if (dd[sid].count === 0) delete dd[sid];
+  save();
+  render();
+}
+
+function selectSymptom(idx) {
+  state.selectedSymptomIdx = idx;
+  render();
+}
+
+function selectIntensity(idx) {
+  state.selectedIntensity = idx;
+  if (state.selectedDay) {
+    const dd = getDayData(state.selectedDay);
+    const s = SYMPTOMS[state.selectedSymptomIdx];
+    if (dd[s.id]) { dd[s.id].intensity = idx; save(); }
+  }
+  render();
+}
+
+function clearDay() {
+  if (!state.selectedDay) return;
+  const md = getMonthData();
+  delete md.days[state.selectedDay];
+  save();
+  render();
+}
+
+document.getElementById('cycleNotes').addEventListener('input', saveNotes);
+
+load();
+render();
+</script>
+</body>
+</html>
